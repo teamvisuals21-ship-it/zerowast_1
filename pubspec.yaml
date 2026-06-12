@@ -1,0 +1,25 @@
+name: nft_marketplace
+description: A Flutter NFT marketplace app with Supabase backend integration.
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cached_network_image: any
+  cupertino_icons: any
+  google_fonts: any
+  intl: any
+  supabase_flutter: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  uses-material-design: true
