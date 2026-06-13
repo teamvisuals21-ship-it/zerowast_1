@@ -238,16 +238,25 @@ class _Header extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => _showFeatureHint(
+                    context,
+                    'Use the product cards below to browse and save products.',
+                  ),
                   child: const Text('Products'),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => _showFeatureHint(
+                    context,
+                    'Your tracker, Eco Score, and ranking are in the dashboard.',
+                  ),
                   child: const Text('Impact'),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _showFeatureHint(
+                    context,
+                    'Profile photo and order preferences are available in the dashboard.',
+                  ),
                   icon: const Icon(Icons.account_balance_wallet_outlined),
                   label: const Text('Account'),
                 ),
@@ -359,12 +368,18 @@ class _HeroSection extends StatelessWidget {
             runSpacing: 12,
             children: [
               ElevatedButton.icon(
-                onPressed: () {},
+                        onPressed: () => _showFeatureHint(
+                          context,
+                          'Tap the heart on any product card to save it.',
+                        ),
                 icon: const Icon(Icons.rocket_launch_outlined),
                         label: const Text('Start saving'),
               ),
               OutlinedButton.icon(
-                onPressed: () {},
+                        onPressed: () => _showFeatureHint(
+                          context,
+                          'Use the Waste tracker panel to add reduced waste, recycled items, food saved, or donations.',
+                        ),
                 icon: const Icon(Icons.auto_awesome_outlined),
                         label: const Text('Report waste'),
               ),
@@ -763,4 +778,10 @@ String _relativeTime(DateTime createdAt) {
     return '${difference.inHours}h ago';
   }
   return '${difference.inDays}d ago';
+}
+
+void _showFeatureHint(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message)),
+  );
 }
