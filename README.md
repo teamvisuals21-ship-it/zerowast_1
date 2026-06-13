@@ -1,8 +1,8 @@
-# NFT Marketplace Flutter + Supabase
+# EcoHub Flutter + Supabase
 
-This repository contains a Flutter implementation for an NFT marketplace concept and Supabase backend code for the data model, seed content, storage, and row-level security policies.
+This repository contains a Flutter implementation for a responsive zero-waste product marketplace and Supabase backend code for the data model, seed content, storage, and row-level security policies.
 
-The Figma URL could not be fetched from this cloud environment, so the implementation follows the requested project theme: a premium dark NFT marketplace with featured drops, live auctions, top collections, search, favorites, and creator/owner profile data.
+The app includes product discovery plus a user dashboard for profile photos, saved products, order settings, help center issue reporting, realtime notifications, waste tracking, and automatic Eco Score ranking.
 
 ## Project structure
 
@@ -33,6 +33,17 @@ flutter run --dart-define=SUPABASE_URL=YOUR_SUPABASE_URL --dart-define=SUPABASE_
 ```
 
 If the Supabase values are omitted, the app runs with bundled demo data.
+
+## Implemented features
+
+- Profile photo upload/update/delete through the `profile-photos` Supabase Storage bucket, including image type and size validation.
+- Saved products through the `saved_products` table, with persistent save/unsave controls and a dashboard list.
+- Order preferences through `order_preferences` with delivery, packaging, substitution, contactless, and notes fields.
+- Help Center with FAQ, contact number `01747104029`, live support info, and support issue submissions to `support_issues`.
+- Fixed notification bar backed by `notifications`, unread count, realtime stream updates, and read/unread actions.
+- Waste tracker backed by `waste_records`, with automatic totals for waste reduced, recycled items, food saved, and monthly stats.
+- Eco Score calculation backed by `eco_scores` and `eco_score_history`, recalculated by database triggers after waste and saved-product changes.
+- RLS policies and indexes for all new CRUD surfaces.
 
 ## Supabase setup
 

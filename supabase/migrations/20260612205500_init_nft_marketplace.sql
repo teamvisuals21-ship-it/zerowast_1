@@ -121,54 +121,66 @@ alter table public.bids enable row level security;
 alter table public.favorites enable row level security;
 alter table public.activity_events enable row level security;
 
+drop policy if exists "Profiles are public" on public.profiles;
 create policy "Profiles are public"
 on public.profiles for select
 using (true);
 
+drop policy if exists "Users can insert their own profile" on public.profiles;
 create policy "Users can insert their own profile"
 on public.profiles for insert
 with check (auth.uid() = id);
 
+drop policy if exists "Users can update their own profile" on public.profiles;
 create policy "Users can update their own profile"
 on public.profiles for update
 using (auth.uid() = id)
 with check (auth.uid() = id);
 
+drop policy if exists "Collections are public" on public.collections;
 create policy "Collections are public"
 on public.collections for select
 using (true);
 
+drop policy if exists "Creators can manage their collections" on public.collections;
 create policy "Creators can manage their collections"
 on public.collections for all
 using (auth.uid() = creator_id)
 with check (auth.uid() = creator_id);
 
+drop policy if exists "NFTs are public" on public.nft_items;
 create policy "NFTs are public"
 on public.nft_items for select
 using (true);
 
+drop policy if exists "Owners can manage their NFTs" on public.nft_items;
 create policy "Owners can manage their NFTs"
 on public.nft_items for all
 using (auth.uid() = owner_id)
 with check (auth.uid() = owner_id);
 
+drop policy if exists "Bids are public" on public.bids;
 create policy "Bids are public"
 on public.bids for select
 using (true);
 
+drop policy if exists "Authenticated users can bid" on public.bids;
 create policy "Authenticated users can bid"
 on public.bids for insert
 with check (auth.role() = 'authenticated' and auth.uid() = bidder_id);
 
+drop policy if exists "Users can view favorites" on public.favorites;
 create policy "Users can view favorites"
 on public.favorites for select
 using (auth.uid() = profile_id);
 
+drop policy if exists "Users can manage favorites" on public.favorites;
 create policy "Users can manage favorites"
 on public.favorites for all
 using (auth.uid() = profile_id)
 with check (auth.uid() = profile_id);
 
+drop policy if exists "Activity is public" on public.activity_events;
 create policy "Activity is public"
 on public.activity_events for select
 using (true);
@@ -177,15 +189,23 @@ insert into storage.buckets (id, name, public)
 values ('nft-media', 'nft-media', true)
 on conflict (id) do nothing;
 
+drop policy if exists "NFT media is publicly readable" on storage.objects;
 create policy "NFT media is publicly readable"
 on storage.objects for select
 using (bucket_id = 'nft-media');
 
+drop policy if exists "Authenticated users can upload NFT media" on storage.objects;
 create policy "Authenticated users can upload NFT media"
 on storage.objects for insert
 with check (bucket_id = 'nft-media' and auth.role() = 'authenticated');
 
+drop policy if exists "Owners can update their NFT media" on storage.objects;
 create policy "Owners can update their NFT media"
 on storage.objects for update
 using (bucket_id = 'nft-media' and owner = auth.uid())
 with check (bucket_id = 'nft-media' and owner = auth.uid());
+
+drop policy if exists "Owners can delete their NFT media" on storage.objects;
+create policy "Owners can delete their NFT media"
+on storage.objects for delete
+using (bucket_id = 'nft-media' and owner = auth.uid());

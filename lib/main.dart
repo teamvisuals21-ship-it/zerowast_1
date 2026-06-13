@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'src/data/marketplace_repository.dart';
+import 'src/data/sustainability_repository.dart';
 import 'src/screens/marketplace_home_page.dart';
 import 'src/theme/app_theme.dart';
 
@@ -35,11 +36,14 @@ class NftMarketplaceApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NFT Marketplace',
+      title: 'EcoHub Zero Waste',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: MarketplaceHomePage(
         repository: MarketplaceRepository(
+          useSupabase: hasSupabaseConfig,
+        ),
+        sustainabilityRepository: SustainabilityRepository(
           useSupabase: hasSupabaseConfig,
         ),
       ),

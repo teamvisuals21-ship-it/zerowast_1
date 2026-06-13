@@ -1,5 +1,5 @@
-name: nft_marketplace
-description: A Flutter NFT marketplace app with Supabase backend integration.
+name: ecohub_zero_waste
+description: A Flutter zero-waste product dashboard with Supabase backend integration.
 publish_to: "none"
 
 version: 1.0.0+1
@@ -13,6 +13,7 @@ dependencies:
   cached_network_image: any
   cupertino_icons: any
   google_fonts: any
+  image_picker: any
   intl: any
   supabase_flutter: any
 

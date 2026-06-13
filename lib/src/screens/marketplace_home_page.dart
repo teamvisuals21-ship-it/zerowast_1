@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../data/marketplace_repository.dart';
+import '../data/sustainability_repository.dart';
 import '../models/marketplace_models.dart';
+import '../models/sustainability_models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/collection_card.dart';
 import '../widgets/nft_card.dart';
 import '../widgets/stat_chip.dart';
+import '../widgets/sustainability_dashboard.dart';
 
 class MarketplaceHomePage extends StatefulWidget {
   const MarketplaceHomePage({
     super.key,
     required this.repository,
+    required this.sustainabilityRepository,
   });
 
   final MarketplaceRepository repository;
+  final SustainabilityRepository sustainabilityRepository;
 
   @override
   State<MarketplaceHomePage> createState() => _MarketplaceHomePageState();
@@ -21,6 +26,8 @@ class MarketplaceHomePage extends StatefulWidget {
 
 class _MarketplaceHomePageState extends State<MarketplaceHomePage> {
   late final Future<MarketplaceSnapshot> _marketplaceFuture;
+  Future<SustainabilitySnapshot>? _sustainabilityFuture;
+  List<NftAsset> _lastProducts = const [];
   String _query = '';
 
   @override
@@ -54,46 +61,102 @@ class _MarketplaceHomePageState extends State<MarketplaceHomePage> {
 
               final marketplace = snapshot.data!;
               final filteredAssets = _filterAssets(marketplace.assets);
+              _lastProducts = marketplace.assets;
+              final dashboardFuture = _sustainabilityFuture ??=
+                  widget.sustainabilityRepository.loadDashboard(
+                availableProducts: marketplace.assets,
+              );
 
-              return CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: _Header(
-                      isUsingDemoData: marketplace.isUsingDemoData,
-                      onQueryChanged: (value) {
-                        setState(() => _query = value);
-                      },
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: _HeroSection(
-                      assets: marketplace.assets,
-                      collections: marketplace.collections,
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: _SectionHeader(
-                      title: _query.isEmpty ? 'Live auctions' : 'Search result',
-                      actionText: '${filteredAssets.length} items',
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: _AuctionRail(assets: filteredAssets),
-                  ),
-                  SliverToBoxAdapter(
-                    child: _DesktopGrid(
-                      collections: marketplace.collections,
-                      activity: marketplace.activity,
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
-                ],
+              return FutureBuilder<SustainabilitySnapshot>(
+                future: dashboardFuture,
+                builder: (context, dashboardSnapshot) {
+                  final dashboard = dashboardSnapshot.data;
+
+                  return Stack(
+                    children: [
+                      CustomScrollView(
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: _Header(
+                              isUsingDemoData: marketplace.isUsingDemoData ||
+                                  (dashboard?.isUsingDemoData ?? false),
+                              profile: dashboard?.profile,
+                              onQueryChanged: (value) {
+                                setState(() => _query = value);
+                              },
+                            ),
+                          ),
+                          SliverToBoxAdapter(
+                            child: _HeroSection(
+                              assets: marketplace.assets,
+                              collections: marketplace.collections,
+                            ),
+                          ),
+                          SliverToBoxAdapter(
+                            child: _SectionHeader(
+                              title: _query.isEmpty
+                                  ? 'Live products'
+                                  : 'Search result',
+                              actionText: '${filteredAssets.length} items',
+                            ),
+                          ),
+                          SliverToBoxAdapter(
+                            child: _AuctionRail(
+                              assets: filteredAssets,
+                              savedProductIds:
+                                  dashboard?.savedProductIds ?? const {},
+                              repository: widget.sustainabilityRepository,
+                              onRefresh: _refreshSustainability,
+                            ),
+                          ),
+                          SliverToBoxAdapter(
+                            child: _DesktopGrid(
+                              collections: marketplace.collections,
+                              activity: marketplace.activity,
+                            ),
+                          ),
+                          SliverToBoxAdapter(
+                            child: dashboard == null
+                                ? const Padding(
+                                    padding: EdgeInsets.all(32),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                : SustainabilityDashboard(
+                                    snapshot: dashboard,
+                                    availableProducts: marketplace.assets,
+                                    repository:
+                                        widget.sustainabilityRepository,
+                                    onRefresh: _refreshSustainability,
+                                  ),
+                          ),
+                          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                        ],
+                      ),
+                      if (dashboard != null)
+                        FixedNotificationBar(
+                          repository: widget.sustainabilityRepository,
+                          fallbackNotifications: dashboard.notifications,
+                          onRefresh: _refreshSustainability,
+                        ),
+                    ],
+                  );
+                },
               );
             },
           ),
         ),
       ),
     );
+  }
+
+  void _refreshSustainability() {
+    setState(() {
+      _sustainabilityFuture = widget.sustainabilityRepository.loadDashboard(
+        availableProducts: _lastProducts,
+      );
+    });
   }
 
   List<NftAsset> _filterAssets(List<NftAsset> assets) {
@@ -113,10 +176,12 @@ class _MarketplaceHomePageState extends State<MarketplaceHomePage> {
 class _Header extends StatelessWidget {
   const _Header({
     required this.isUsingDemoData,
+    required this.profile,
     required this.onQueryChanged,
   });
 
   final bool isUsingDemoData;
+  final UserProfile? profile;
   final ValueChanged<String> onQueryChanged;
 
   @override
@@ -147,7 +212,7 @@ class _Header extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'Niftio',
+                'EcoHub',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
@@ -163,7 +228,7 @@ class _Header extends StatelessWidget {
             child: TextField(
               onChanged: onQueryChanged,
               decoration: const InputDecoration(
-                hintText: 'Search collections, NFTs, or creators',
+                hintText: 'Search products, collections, or creators',
                 prefixIcon: Icon(Icons.search),
               ),
             ),
@@ -174,21 +239,53 @@ class _Header extends StatelessWidget {
               children: [
                 TextButton(
                   onPressed: () {},
-                  child: const Text('Explore'),
+                  child: const Text('Products'),
                 ),
                 TextButton(
                   onPressed: () {},
-                  child: const Text('Stats'),
+                  child: const Text('Impact'),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () {},
                   icon: const Icon(Icons.account_balance_wallet_outlined),
-                  label: const Text('Connect wallet'),
+                  label: const Text('Account'),
                 ),
+                if (profile != null) ...[
+                  const SizedBox(width: 12),
+                  _HeaderProfileAvatar(profile: profile!),
+                ],
               ],
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeaderProfileAvatar extends StatelessWidget {
+  const _HeaderProfileAvatar({required this.profile});
+
+  final UserProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasNetworkImage = profile.avatarUrl.startsWith('http');
+
+    return Tooltip(
+      message: profile.displayName,
+      child: CircleAvatar(
+        radius: 21,
+        backgroundColor: AppTheme.surfaceElevated,
+        backgroundImage: hasNetworkImage ? NetworkImage(profile.avatarUrl) : null,
+        child: hasNetworkImage
+            ? null
+            : Text(
+                profile.displayName.isEmpty
+                    ? '?'
+                    : profile.displayName[0].toUpperCase(),
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
       ),
     );
   }
@@ -242,7 +339,7 @@ class _HeroSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Discover, collect, and sell extraordinary NFTs',
+                    'Rescue products, reduce waste, and track your impact',
             style: textTheme.displaySmall?.copyWith(
               fontWeight: FontWeight.w900,
               height: 1.02,
@@ -250,7 +347,7 @@ class _HeroSection extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'A premium marketplace experience for live auctions, digital collectibles, and verified creators.',
+                    'A responsive zero-waste dashboard for saved products, order preferences, support, notifications, waste tracking, and Eco Score.',
             style: textTheme.titleMedium?.copyWith(
               color: AppTheme.muted,
               height: 1.5,
@@ -264,12 +361,12 @@ class _HeroSection extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: () {},
                 icon: const Icon(Icons.rocket_launch_outlined),
-                label: const Text('Start exploring'),
+                        label: const Text('Start saving'),
               ),
               OutlinedButton.icon(
                 onPressed: () {},
                 icon: const Icon(Icons.auto_awesome_outlined),
-                label: const Text('Create NFT'),
+                        label: const Text('Report waste'),
               ),
             ],
           ),
@@ -279,7 +376,7 @@ class _HeroSection extends StatelessWidget {
             runSpacing: 12,
             children: [
               StatChip(
-                label: 'Listed NFTs',
+                        label: 'Products',
                 value: '${assets.length * 128}+',
                 icon: Icons.grid_view_rounded,
               ),
@@ -367,9 +464,17 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _AuctionRail extends StatelessWidget {
-  const _AuctionRail({required this.assets});
+  const _AuctionRail({
+    required this.assets,
+    required this.savedProductIds,
+    required this.repository,
+    required this.onRefresh,
+  });
 
   final List<NftAsset> assets;
+  final Set<String> savedProductIds;
+  final SustainabilityRepository repository;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -394,9 +499,79 @@ class _AuctionRail extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: assets.length,
         separatorBuilder: (_, __) => const SizedBox(width: 18),
-        itemBuilder: (context, index) => NftCard(asset: assets[index]),
+        itemBuilder: (context, index) => _SaveableProductCard(
+          asset: assets[index],
+          isSaved: savedProductIds.contains(assets[index].id),
+          repository: repository,
+          onRefresh: onRefresh,
+        ),
       ),
     );
+  }
+}
+
+class _SaveableProductCard extends StatefulWidget {
+  const _SaveableProductCard({
+    required this.asset,
+    required this.isSaved,
+    required this.repository,
+    required this.onRefresh,
+  });
+
+  final NftAsset asset;
+  final bool isSaved;
+  final SustainabilityRepository repository;
+  final VoidCallback onRefresh;
+
+  @override
+  State<_SaveableProductCard> createState() => _SaveableProductCardState();
+}
+
+class _SaveableProductCardState extends State<_SaveableProductCard> {
+  bool _isBusy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        NftCard(asset: widget.asset),
+        Positioned(
+          right: 18,
+          bottom: 96,
+          child: FloatingActionButton.small(
+            heroTag: 'save-${widget.asset.id}',
+            onPressed: _isBusy ? null : _toggleSaved,
+            backgroundColor: AppTheme.surfaceElevated,
+            foregroundColor:
+                widget.isSaved ? AppTheme.accent : Colors.white,
+            child: Icon(
+              widget.isSaved ? Icons.favorite : Icons.favorite_border,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _toggleSaved() async {
+    setState(() => _isBusy = true);
+    try {
+      await widget.repository.toggleSavedProduct(widget.asset, widget.isSaved);
+      widget.onRefresh();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isBusy = false);
+      }
+    }
   }
 }
 

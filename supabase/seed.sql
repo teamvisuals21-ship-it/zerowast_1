@@ -230,3 +230,152 @@ on conflict (id) do update set
   asset_title = excluded.asset_title,
   eth_value = excluded.eth_value,
   created_at = excluded.created_at;
+
+insert into public.order_preferences (
+  profile_id,
+  delivery_window,
+  packaging_preference,
+  allow_substitutions,
+  contactless_delivery,
+  notes
+) values
+  (
+    '98af08d5-8e4d-45f3-9c8f-1f26cce611c2',
+    'Evening',
+    'Reusable bags',
+    true,
+    false,
+    'Leave rescued food at the front desk.'
+  )
+on conflict (profile_id) do update set
+  delivery_window = excluded.delivery_window,
+  packaging_preference = excluded.packaging_preference,
+  allow_substitutions = excluded.allow_substitutions,
+  contactless_delivery = excluded.contactless_delivery,
+  notes = excluded.notes;
+
+insert into public.saved_products (
+  profile_id,
+  product_id,
+  product_title,
+  product_image_url,
+  price_eth
+) values
+  (
+    '98af08d5-8e4d-45f3-9c8f-1f26cce611c2',
+    '725bf110-afbf-4ff9-ad42-908f44ad037b',
+    'Astral Runner #08',
+    'https://images.unsplash.com/photo-1635322966219-b75ed372eb01?auto=format&fit=crop&w=900&q=80',
+    2.4
+  ),
+  (
+    '98af08d5-8e4d-45f3-9c8f-1f26cce611c2',
+    'c19f5027-5155-4b6d-9ac8-53308d447379',
+    'Glass Orchid #14',
+    'https://images.unsplash.com/photo-1617791160505-6f00504e3519?auto=format&fit=crop&w=900&q=80',
+    0.84
+  )
+on conflict (profile_id, product_id) do update set
+  product_title = excluded.product_title,
+  product_image_url = excluded.product_image_url,
+  price_eth = excluded.price_eth;
+
+insert into public.notifications (
+  id,
+  profile_id,
+  title,
+  body,
+  type,
+  is_read,
+  created_at
+) values
+  (
+    '53839bd9-4000-4f41-9833-e1d58e2f6e84',
+    '98af08d5-8e4d-45f3-9c8f-1f26cce611c2',
+    'Welcome to EcoHub',
+    'Your profile, saved products, tracker, and notifications are synced.',
+    'general',
+    false,
+    now() - interval '20 minutes'
+  ),
+  (
+    '78a2c88d-29c2-46ee-9077-0cb83d47d14c',
+    '98af08d5-8e4d-45f3-9c8f-1f26cce611c2',
+    'Order settings ready',
+    'Reusable packaging and delivery preferences are active.',
+    'order',
+    true,
+    now() - interval '2 hours'
+  )
+on conflict (id) do update set
+  title = excluded.title,
+  body = excluded.body,
+  type = excluded.type,
+  is_read = excluded.is_read,
+  created_at = excluded.created_at;
+
+insert into public.waste_records (
+  id,
+  profile_id,
+  record_type,
+  quantity,
+  unit,
+  created_at
+) values
+  (
+    '2e0c3b01-b137-4a6f-b2a9-281836843f38',
+    '98af08d5-8e4d-45f3-9c8f-1f26cce611c2',
+    'waste_reduced',
+    12.5,
+    'kg',
+    now() - interval '2 days'
+  ),
+  (
+    'de828407-59de-4015-a547-654de306266d',
+    '98af08d5-8e4d-45f3-9c8f-1f26cce611c2',
+    'recycled_item',
+    42,
+    'items',
+    now() - interval '4 days'
+  ),
+  (
+    'b68670b3-a836-41ab-bdbf-d4ce4ba6fe33',
+    '98af08d5-8e4d-45f3-9c8f-1f26cce611c2',
+    'food_saved',
+    8.2,
+    'kg',
+    now() - interval '8 days'
+  )
+on conflict (id) do update set
+  profile_id = excluded.profile_id,
+  record_type = excluded.record_type,
+  quantity = excluded.quantity,
+  unit = excluded.unit,
+  created_at = excluded.created_at;
+
+insert into public.support_issues (
+  id,
+  profile_id,
+  subject,
+  message,
+  status,
+  created_at
+) values
+  (
+    '068f9aa4-e531-45aa-a075-6c1bdcaa35d6',
+    '98af08d5-8e4d-45f3-9c8f-1f26cce611c2',
+    'Sample pickup question',
+    'Can I update the preferred pickup window after placing an order?',
+    'open',
+    now() - interval '1 day'
+  )
+on conflict (id) do update set
+  subject = excluded.subject,
+  message = excluded.message,
+  status = excluded.status,
+  created_at = excluded.created_at;
+
+select public.recalculate_eco_score(
+  '98af08d5-8e4d-45f3-9c8f-1f26cce611c2',
+  'Seed data recalculation'
+);
